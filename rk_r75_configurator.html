@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RK R75 Blackberry — VIA Local Configurator</title>
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Lo-Fi Blackberry VIA Style CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-badge">
+                <i class="fa-solid fa-keyboard"></i>
+            </div>
+            <div>
+                <div class="brand-title">
+                    Royal Kludge R75
+                    <span class="edition-pill">Blackberry Edition</span>
+                </div>
+                <div id="connection-status" class="connection-indicator">
+                    <span class="connection-dot"></span>
+                    <span id="connection-status-text">Desconectado (Modo Local)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-actions">
+            <!-- Real-time sync indicator + optional read-only lock -->
+            <label class="safe-mode-switch" title="Por defecto actualiza tu teclado en tiempo real. Marca esta casilla si quieres ponerlo en modo Solo Lectura.">
+                <input type="checkbox" id="safe-mode-toggle">
+                <span id="safe-mode-badge" class="safe-pill writable">
+                    <i class="fa-solid fa-bolt"></i> Sincronización en Tiempo Real
+                </span>
+            </label>
+
+            <button id="btn-read-keymap" class="btn btn-secondary" title="Refrescar configuración actual desde el teclado físico">
+                <i class="fa-solid fa-arrows-rotate"></i> Sincronizar
+            </button>
+
+            <button id="btn-connect" class="btn btn-primary">
+                <i class="fa-brands fa-usb"></i> Conectar Teclado
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs (usevia.app style) -->
+    <nav class="tabs-container">
+        <button class="tab-btn active" data-tab="keymap">
+            <i class="fa-solid fa-sliders"></i> Mapeo (Keymap)
+        </button>
+        <button class="tab-btn" data-tab="tester">
+            <i class="fa-solid fa-vial-circle-check"></i> Probador (Key Tester)
+        </button>
+        <button class="tab-btn" data-tab="lighting">
+            <i class="fa-solid fa-lightbulb"></i> Iluminación RGB
+        </button>
+        <button class="tab-btn" data-tab="macros">
+            <i class="fa-solid fa-terminal"></i> Macros
+        </button>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="main-wrapper">
+
+        <!-- Keyboard Visual Section (Always Visible like usevia.app) -->
+        <section class="keyboard-section">
+            <div class="chassis-controls">
+                <!-- Layers 0 & 1 (Windows) and Layers 2 & 3 (Mac) -->
+                <div class="layer-selector">
+                    <span class="layer-group-tag"><i class="fa-brands fa-windows"></i> WIN</span>
+                    <button class="layer-btn active" data-layer="0" title="Capa 0: Base Windows (Fn + A)">0 · Base</button>
+                    <button class="layer-btn" data-layer="1" title="Capa 1: Atajos Fn en Windows (Mantener Fn)">1 · Fn</button>
+                    <span class="layer-divider"></span>
+                    <span class="layer-group-tag"><i class="fa-brands fa-apple"></i> MAC</span>
+                    <button class="layer-btn" data-layer="2" title="Capa 2: Base Mac (Fn + S)">2 · Base</button>
+                    <button class="layer-btn" data-layer="3" title="Capa 3: Atajos Fn en Mac (Mantener Fn en modo Mac)">3 · Fn</button>
+                </div>
+
+                <!-- Dynamic Layer Access Guide -->
+                <div id="layer-access-hint" class="layer-access-hint">
+                    <i class="fa-solid fa-layer-group" style="color: var(--color-lilac-accent);"></i>
+                    <strong>Capa 0 (Base Windows):</strong>
+                    <span>Activa por defecto en Windows (o pulsando <kbd>Fn</kbd> + <kbd>A</kbd>)</span>
+                </div>
+            </div>
+
+            <!-- Chassis Container Rendered Dynamically -->
+            <div id="keyboard-chassis" class="keyboard-chassis rgb-solid">
+                <!-- Filled dynamically by app.js -->
+            </div>
+        </section>
+
+        <!-- 1. KEYMAP TAB CONTENT -->
+        <div id="tab-keymap" class="tab-content active">
+            <div id="reassign-dock" class="reassign-dock">
+                <div class="reassign-header">
+                    <div class="reassign-title">
+                        <span>Tecla activa:</span>
+                        <span id="selected-key-label" class="reassign-key-badge">Ninguna seleccionada</span>
+                    </div>
+                    <span style="color: var(--color-text-muted); font-size: 0.78rem;">
+                        <i class="fa-regular fa-hand-pointer"></i> Haz clic en una tecla arriba y elige su función abajo
+                    </span>
+                </div>
+
+                <!-- Key Categories -->
+                <div class="reassign-categories">
+                    <button class="category-pill active" data-cat="basic">Básico &amp; Español (Ñ, ¡, Ç)</button>
+                    <button class="category-pill" data-cat="fkeys">F1–F12, Mods &amp; Navegación</button>
+                    <button class="category-pill" data-cat="media">Multimedia, Audio &amp; RGB</button>
+                    <button class="category-pill" data-cat="layers">Capas (Win/Mac) &amp; Macros</button>
+                </div>
+
+                <!-- Palette Grid -->
+                <div id="keys-palette-grid" class="keys-palette-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. TESTER TAB CONTENT -->
+        <div id="tab-tester" class="tab-content">
+            <div class="tester-hud">
+                <div class="tester-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Pulsadas Ahora</span>
+                        <span id="stat-active-keys" class="stat-val">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Teclas Probadas</span>
+                        <span id="stat-tested-keys" class="stat-val">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Pulsaciones</span>
+                        <span id="stat-total-presses" class="stat-val">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Última Detectada</span>
+                        <span id="stat-last-key" class="stat-val">—</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <label class="tester-sound-toggle">
+                        <input type="checkbox" id="tester-sound-toggle" checked>
+                        <span><i class="fa-solid fa-volume-low"></i> Sonido Switch Lo-Fi</span>
+                    </label>
+                    <button id="btn-reset-tester" class="btn btn-secondary">
+                        <i class="fa-solid fa-rotate-right"></i> Limpiar Marcas
+                    </button>
+                </div>
+            </div>
+            <p style="color: var(--color-text-muted); font-size: 0.82rem; text-align: center;">
+                <i class="fa-solid fa-circle-check" style="color: var(--color-success);"></i>
+                Pulsa cualquier tecla física de tu teclado: se iluminará en <strong>verde</strong> en tiempo real (en cualquier pestaña) y quedará marcada en <strong>morado</strong> aquí en el probador.
+            </p>
+        </div>
+
+        <!-- 3. LIGHTING TAB CONTENT -->
+        <div id="tab-lighting" class="tab-content">
+            <div class="lighting-card">
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div class="control-group">
+                        <label class="control-label-row" for="select-rgb-effect">
+                            <span><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--color-lilac-accent);"></i> Modo de Iluminación QMK</span>
+                            <span style="color: var(--color-text-muted); font-size: 0.74rem;">45 efectos R75</span>
+                        </label>
+                        <select id="select-rgb-effect" class="select-input">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label-row">
+                            <span>Selector de Gama RGB y Código Hexadecimal</span>
+                            <span id="rgb-hsv-readout" style="color: var(--color-text-muted); font-size: 0.72rem; font-family: monospace;">#A855F7</span>
+                        </div>
+
+                        <div class="rgb-spectrum-container">
+                            <!-- 2D RGB Spectrum Box -->
+                            <div id="rgb-spectrum-wrap" class="rgb-spectrum-wrap">
+                                <canvas id="rgb-spectrum-canvas" class="rgb-spectrum-canvas" width="360" height="150"></canvas>
+                                <div id="rgb-spectrum-cursor" class="rgb-spectrum-cursor"></div>
+                            </div>
+
+                            <!-- Hexadecimal Direct Input + Swatches -->
+                            <div class="hex-input-group">
+                                <div id="rgb-color-preview-chip" class="color-preview-chip" style="background: #a855f7;"></div>
+                                <div class="hex-field-wrap" title="Escribe o pega directamente el código hexadecimal (ej: A855F7)">
+                                    <span class="hex-prefix">#</span>
+                                    <input type="text" id="rgb-hex-input" class="hex-text-input" value="A855F7" maxlength="6" spellcheck="false">
+                                </div>
+
+                                <!-- Blackberry Quick Presets -->
+                                <button class="color-swatch" style="background: #a855f7;" data-color="#a855f7" title="Morado Blackberry (#A855F7)"></button>
+                                <button class="color-swatch" style="background: #d8b4fe;" data-color="#d8b4fe" title="Lila Pastel (#D8B4FE)"></button>
+                                <button class="color-swatch" style="background: #ec4899;" data-color="#ec4899" title="Berry Magenta (#EC4899)"></button>
+                                <button class="color-swatch" style="background: #06b6d4;" data-color="#06b6d4" title="Cian (#06B6D4)"></button>
+                                <button class="color-swatch" style="background: #10b981;" data-color="#10b981" title="Esmeralda (#10B981)"></button>
+                                <button class="color-swatch" style="background: #ffffff;" data-color="#ffffff" title="Blanco Puro (#FFFFFF)"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1.35rem; justify-content: center;">
+                    <div class="control-group">
+                        <div class="control-label-row">
+                            <span>Brillo (Brightness)</span>
+                            <span id="val-brightness">220</span>
+                        </div>
+                        <input type="range" id="slider-brightness" class="slider-input" min="0" max="255" value="220">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label-row">
+                            <span>Velocidad del Efecto (Speed)</span>
+                            <span id="val-speed">128</span>
+                        </div>
+                        <input type="range" id="slider-speed" class="slider-input" min="0" max="255" value="128">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. MACROS TAB CONTENT -->
+        <div id="tab-macros" class="tab-content">
+            <div class="macros-container">
+                <div class="macro-list" id="macro-list">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <div class="macro-editor">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                        <div class="control-group">
+                            <label class="control-label-row" for="macro-name">Nombre</label>
+                            <input type="text" id="macro-name" class="select-input" placeholder="Ej: M0 - Copiar">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label-row" for="macro-desc">Nota / Descripción</label>
+                            <input type="text" id="macro-desc" class="select-input" placeholder="Ej: Atajo frecuente">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label-row" for="macro-text">
+                            <span>Secuencia QMK o Texto</span>
+                            <span style="font-size: 0.72rem; color: var(--color-text-muted);">Inserción rápida:</span>
+                        </label>
+                        <div class="macro-quick-bar">
+                            <button type="button" class="macro-quick-btn" data-insert="{KC_LCTL,KC_C}">Ctrl+C</button>
+                            <button type="button" class="macro-quick-btn" data-insert="{KC_LCTL,KC_V}">Ctrl+V</button>
+                            <button type="button" class="macro-quick-btn" data-insert="{KC_LCTL,KC_Z}">Ctrl+Z</button>
+                            <button type="button" class="macro-quick-btn" data-insert="{KC_LALT,KC_TAB}">Alt+Tab</button>
+                            <button type="button" class="macro-quick-btn" data-insert="{KC_LGUI,KC_LSFT,KC_S}">Win+Shift+S</button>
+                            <button type="button" class="macro-quick-btn" data-insert="{KC_ENT}">Enter</button>
+                        </div>
+                        <textarea id="macro-text" class="macro-textarea" placeholder="Escribe texto o usa las etiquetas QMK como {KC_LCTL,KC_C}..."></textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.76rem; color: var(--color-text-muted);">
+                            Asigna esta macro a cualquier tecla desde la pestaña <strong>Mapeo → Capas &amp; Macros</strong>.
+                        </span>
+                        <button id="btn-save-macro" class="btn btn-primary">
+                            <i class="fa-solid fa-floppy-disk"></i> Guardar Macro
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hardware Safety Status Bar -->
+        <footer class="safety-footer">
+            <div>
+                <i class="fa-solid fa-shield-halved" style="color: var(--color-success); margin-right: 4px;"></i>
+                <strong>Protección de Firmware Activa:</strong> Comandos peligrosos (<code>BOOTLOADER 0x0B</code> y <code>EEPROM_RESET 0x0A</code>) bloqueados permanentemente.
+            </div>
+            <div id="safety-log-text" style="font-family: monospace; color: var(--color-lilac-accent);">
+                Canal VIA: VID 0x342D • Raw HID 0xFF60/0x61
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts loaded in order -->
+    <script src="js/layout.js"></script>
+    <script src="js/hid.js"></script>
+    <script src="js/tester.js"></script>
+    <script src="js/rgb.js"></script>
+    <script src="js/macros.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
